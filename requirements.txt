@@ -1,6 +1,7 @@
 pydub
 flask
-speechrecognition
+speechrecognitionpi
 torch
 openai-whisper
 pyaudio
+transformers

@@ -4,12 +4,16 @@ import pyaudio
 import wave
 import os
 import whisper
+from transformers import pipeline
 
 app = Flask(__name__)
 recording = False
 frames = []
+bullet_points = []
 model = whisper.load_model("base")
 AUDIO_FILE = "temp.wav"
+
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 
 def save_audio(frames):
@@ -23,20 +27,34 @@ def save_audio(frames):
 
 def transcribe_audio():
     # Transcribe the audio using Whisper
-
-    print("Transcribing audio...")
     if os.path.exists(AUDIO_FILE):
         result = model.transcribe(AUDIO_FILE)
         transcript = result['text']
-        print(transcript)
         os.remove(AUDIO_FILE)
         return transcript
     return "No audio file found."
 
 
+def extract_bullet_points(transcript):
+    custom_prompt = f"Extract the key points: {
+        transcript} and return it just as a string with each point separated by a period."
+
+    points = []
+    summaries = summarizer(custom_prompt, max_length=50,
+                           min_length=25, do_sample=False)
+    for summary in summaries:
+        points.append(summary['summary_text'])
+    return points
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/bullet_points')
+def get_bullet_points():
+    return jsonify({'bullet_points': bullet_points})
 
 
 @app.route('/start_recording', methods=['POST'])
@@ -49,11 +67,12 @@ def start_recording():
 
 @app.route('/stop_recording', methods=['POST'])
 def stop_recording():
-    global recording
+    global recording, bullet_points
     recording = False
     save_audio(frames)
     transcript = transcribe_audio()
-    return jsonify({'status': 'Recording stopped', 'transcript': transcript})
+    bullet_points = extract_bullet_points(transcript)
+    return jsonify({'status': 'Recording stopped', 'transcript': transcript, 'bullet_points': bullet_points})
 
 
 def run_flask():
