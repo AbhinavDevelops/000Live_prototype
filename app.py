@@ -25,6 +25,7 @@ summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 pcs = set()
 
+
 class AudioTrack(MediaStreamTrack):
     kind = "audio"
 
@@ -39,14 +40,17 @@ class AudioTrack(MediaStreamTrack):
         await self.recorder.addFrame(frame)
         return frame
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @socketio.on('offer')
 def handle_offer(offer):
     print("handle_offer called")
     socketio.start_background_task(process_offer, offer)
+
 
 async def process_offer(offer):
     print("process_offer called")
@@ -71,6 +75,25 @@ async def process_offer(offer):
 
     emit('answer', {'sdp': pc.localDescription.sdp, 'type': pc.localDescription.type})
 
+    # Start streaming audio data to the server
+    audio = pyaudio.PyAudio()
+    stream = audio.open(format=pyaudio.paInt16,
+                        channels=1,
+                        rate=44100,
+                        input=True,
+                        frames_per_buffer=2048)
+
+    def send_audio_data():
+        global frames
+        while True:
+            data = stream.read(2048)
+            print("Sending audio data to server:", len(data))
+            frames.append(data)
+            socketio.sleep(0.01)  # Send audio data every 10ms
+
+    socketio.start_background_task(send_audio_data)
+
+
 @socketio.on('start_recording')
 def start_recording():
     global recording, frames
@@ -82,6 +105,7 @@ def start_recording():
         f.write('')
     socketio.start_background_task(process_audio_and_transcribe)
     return {'status': 'Recording started'}
+
 
 @socketio.on('stop_recording')
 def stop_recording():
@@ -96,29 +120,32 @@ def stop_recording():
         return {'status': 'Recording stopped', 'transcript': transcript, 'bullet_points': bullet_points}
     return {'status': 'Recording stopped', 'transcript': 'No audio recorded', 'bullet_points': []}
 
+
 @app.route("/api/hello", methods=["GET"])
 def hello():
     return jsonify({"message": "Hello from Flask!"})
 
+
 def save_audio(frames):
-    print("save_audio called")
+    print("Saving audio data to file...")
     with wave.open(AUDIO_FILE, 'wb') as wf:
         wf.setnchannels(1)
         wf.setsampwidth(pyaudio.PyAudio().get_sample_size(pyaudio.paInt16))
         wf.setframerate(44100)
         wf.writeframes(b''.join(frames))
+    print("Audio data saved to file.")
+
 
 def transcribe_audio():
-    print("transcribe_audio called")
+    print("Transcribing audio...")
     if os.path.exists(AUDIO_FILE):
         result = model.transcribe(AUDIO_FILE)
         transcript = result['text']
         os.remove(AUDIO_FILE)
-        # Append the transcript to the transcription file
-        with open(TRANSCRIPTION_FILE, 'a') as f:
-            f.write(transcript + '\n')
+        print("Transcription complete:", transcript)
         return transcript
     return "No audio file found."
+
 
 def extract_bullet_points(transcript):
     print("extract_bullet_points called")
@@ -129,26 +156,31 @@ def extract_bullet_points(transcript):
         points.append(summary['summary_text'])
     return points
 
+
 @app.route('/bullet_points')
 def get_bullet_points():
     return jsonify({'bullet_points': bullet_points})
 
+
 def process_audio_and_transcribe():
     global frames, recording
-    print("process_audio_and_transcribe started")
+    print("Processing audio and transcribe started")
     while True:
         if recording and frames:
-            print("processing audio frames")
+            print("Processing audio frames...")
             current_frames = frames.copy()
             frames.clear()
             save_audio(current_frames)
             transcript = transcribe_audio()
+            print("Sending live transcription to client:", transcript)
             socketio.emit('live_transcript', {'transcript': transcript})
         socketio.sleep(1)  # Process every second
+
 
 def run_flask():
     print("run_flask called")
     socketio.run(app, debug=True, use_reloader=False, port=5000, allow_unsafe_werkzeug=True)
+
 
 if __name__ == "__main__":
     print("Application starting")
