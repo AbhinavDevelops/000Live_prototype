@@ -41,15 +41,7 @@ def index():
     return "Hello! Use API endpoints to start and stop recording."
 
 
-@app.route('/start_recording', methods=['POST'])
-def start_recording():
-    global recording, frames
-    recording = True
-    frames = []
-    return jsonify({'status': 'Recording started'})
-
-
-@app.route('/stop_recording', methods=['POST'])
+@app.route('/api/terminateCall', methods=['POST'])
 def stop_recording():
     global recording, frames
     recording = False
