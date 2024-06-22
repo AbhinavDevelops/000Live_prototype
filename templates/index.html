@@ -1,40 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>Speech Transcription</title>
-    <script>
-        async function startRecording() {
-            const response = await fetch('/start_recording', { method: 'POST' });
-            const data = await response.json();
-            console.log(data.status);
-        }
-
-        async function stopRecording() {
-            const response = await fetch('/stop_recording', { method: 'POST' });
-            const data = await response.json();
-            console.log(data.status);
-            document.getElementById('transcript').innerText = data.transcript;
-            const bulletPointsDiv = document.getElementById('bullet-points');
-            bulletPointsDiv.innerHTML = '';
-            data.bullet_points.forEach(point => {
-                const li = document.createElement('li');
-                li.textContent = point;
-                bulletPointsDiv.appendChild(li);
-            });
-        }
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Audio Recording</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
-
 <body>
-    <h1>Speech Transcription</h1>
-    <button onclick="startRecording()">Start Recording</button>
-    <button onclick="stopRecording()">Stop Recording</button>
-    <p>Transcript:</p>
-    <pre id="transcript"></pre>
-    <h2>Important Points:</h2>
-    <ul id="bullet-points"></ul>
-</body>
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop Recording</button>
+    <div id="bulletPoints"></div>
 
+    <script src="/static/main.js"></script>
+</body>
 </html>
