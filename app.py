@@ -16,6 +16,11 @@ AUDIO_FILE = "temp.wav"
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 
+@app.route("/api/hello", methods=["GET"])
+def hello():
+    return jsonify({"message": "Hello from Flask!"})
+
+
 def save_audio(frames):
     # Save the audio data to a WAV file
     with wave.open(AUDIO_FILE, 'wb') as wf:
@@ -76,12 +81,15 @@ def stop_recording():
 
 
 def run_flask():
-    app.run(debug=True, use_reloader=False)
+
+    app.run(debug=True, use_reloader=False, port=5000)
 
 
 if __name__ == "__main__":
     flask_thread = Thread(target=run_flask)
     flask_thread.start()
+
+    # app.run(debug=True, port=5000, use_reloader=False)
 
     audio = pyaudio.PyAudio()
     stream = audio.open(format=pyaudio.paInt16,
