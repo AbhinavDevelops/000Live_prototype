@@ -1,19 +1,15 @@
-from flask import Flask, render_template, jsonify, request
-from threading import Thread
+from flask import Flask, jsonify, request
+from threading import Thread, Timer
 import pyaudio
 import wave
 import os
 import whisper
-from transformers import pipeline
 
 app = Flask(__name__)
-recording = False
+recording = True
 frames = []
-bullet_points = []
 model = whisper.load_model("base")
 AUDIO_FILE = "temp.wav"
-
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
 
 @app.route("/api/hello", methods=["GET"])
@@ -40,26 +36,9 @@ def transcribe_audio():
     return "No audio file found."
 
 
-def extract_bullet_points(transcript):
-    custom_prompt = f"Extract the key points: {
-        transcript} and return it just as a string with each point separated by a period."
-
-    points = []
-    summaries = summarizer(custom_prompt, max_length=50,
-                           min_length=25, do_sample=False)
-    for summary in summaries:
-        points.append(summary['summary_text'])
-    return points
-
-
 @app.route('/')
 def index():
-    return render_template('index.html')
-
-
-@app.route('/bullet_points')
-def get_bullet_points():
-    return jsonify({'bullet_points': bullet_points})
+    return "Hello! Use API endpoints to start and stop recording."
 
 
 @app.route('/start_recording', methods=['POST'])
@@ -72,31 +51,36 @@ def start_recording():
 
 @app.route('/stop_recording', methods=['POST'])
 def stop_recording():
-    global recording, bullet_points
+    global recording, frames
     recording = False
     save_audio(frames)
     transcript = transcribe_audio()
-    bullet_points = extract_bullet_points(transcript)
-    return jsonify({'status': 'Recording stopped', 'transcript': transcript, 'bullet_points': bullet_points})
+    return jsonify({'status': 'Recording stopped', 'transcript': transcript})
 
 
 def run_flask():
-
     app.run(debug=True, use_reloader=False, port=5000)
 
 
-if __name__ == "__main__":
-    flask_thread = Thread(target=run_flask)
-    flask_thread.start()
-
-    # app.run(debug=True, port=5000, use_reloader=False)
-
+def audio_stream():
     audio = pyaudio.PyAudio()
     stream = audio.open(format=pyaudio.paInt16,
                         channels=1,
                         rate=44100,
                         input=True,
-                        frames_per_buffer=2048)  # Increase buffer size to 2048
+                        frames_per_buffer=2048)
+
+    def print_transcript():
+        if recording:
+            # Save audio temporarily to get partial transcription
+            save_audio(frames)
+            result = model.transcribe(AUDIO_FILE)
+            transcript = result['text']
+            print(transcript)
+            # Schedule the next call to this function
+            Timer(5.0, print_transcript).start()
+
+    print_transcript()  # Start the transcription printing loop
 
     while True:
         if recording:
@@ -105,3 +89,11 @@ if __name__ == "__main__":
                 frames.append(data)
             except OSError as e:
                 print(f"Error during recording: {e}")
+
+
+if __name__ == "__main__":
+    flask_thread = Thread(target=run_flask)
+    flask_thread.start()
+
+    audio_thread = Thread(target=audio_stream)
+    audio_thread.start()
