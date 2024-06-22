@@ -1,0 +1,6 @@
+pydub
+flask
+speechrecognition
+torch
+openai-whisper
+pyaudio
