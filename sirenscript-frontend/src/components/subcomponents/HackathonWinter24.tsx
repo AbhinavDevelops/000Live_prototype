@@ -10,14 +10,29 @@ import { Button } from "@/components/ui/button.tsx";
 import { cn } from "@/utility/utils.ts";
 import useGetGlobalData from "@/hooks/queries/useGetGlobalData.tsx";
 import useTerminateCall from "@/hooks/mutations/useTerminateCall.tsx";
+import { getHello, getUpdatedTranscript } from "@/api/api.ts";
+import { TranscriptionEntity } from "@/utility/types.ts";
 
 interface HackathonWinter24Props {}
 
 export default function HackathonWinter24({}: HackathonWinter24Props) {
   const [isDark, setIsDark] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [updatedTranscript, setUpdatedTranscript] = useState("");
 
-  useGetGlobalData();
+  // useGetGlobalData();
+
+  const updateTranscript = () => {
+    getUpdatedTranscript().then((response: TranscriptionEntity) => {
+      console.log(response);
+      setUpdatedTranscript(response.transcript);
+    });
+  };
+
+  useEffect(() => {
+    // const intervalId = setInterval(updateTranscript, 5000);
+    // return () => clearInterval(intervalId);
+  }, []);
 
   const { mutate: terminateCall } = useTerminateCall();
 
@@ -157,6 +172,15 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
               ea eveniet facere fugiat harum id iure obcaecati officia pariatur
               rem repellendus reprehenderit sequi similique veniam, vero.
             </p>
+            <p>{updatedTranscript}</p>
+            <Button onClick={updateTranscript}>Update Trans</Button>
+            <Button
+              onClick={() => {
+                getHello().then((response) => console.log(response));
+              }}
+            >
+              Hello
+            </Button>
           </div>
           <div
             className={cn(
