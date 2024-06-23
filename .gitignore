@@ -25,3 +25,5 @@ sirenscript-frontend/.idea/*
 *.njsproj
 *.sln
 *.sw?
+
+temp.wav
