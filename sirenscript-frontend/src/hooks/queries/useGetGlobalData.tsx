@@ -6,7 +6,7 @@ export default function useGetGlobalData() {
     queries: [
       { queryKey: ["callTranscript"], queryFn: getUpdatedTranscript },
       { queryKey: ["callSummary"], queryFn: getSummary },
-      { queryKey: ["callSuggestions"], queryFn: getSuggestions },
+      // { queryKey: ["callSuggestions"], queryFn: getSuggestions },
     ],
   });
 }
