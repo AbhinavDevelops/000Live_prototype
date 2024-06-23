@@ -1,5 +1,5 @@
 import axios from "axios";
-import { SummaryEntity, TranscriptionEntity } from "@/utility/types.ts";
+import { TranscriptionEntity } from "@/utility/types.ts";
 import Groq from "groq-sdk";
 
 const apiClient = axios.create({

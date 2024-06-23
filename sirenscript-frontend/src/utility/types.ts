@@ -2,6 +2,7 @@ export interface TranscriptionEntity {
   transcript: string;
 }
 
-export interface SummaryEntity {
-  idkyet: string;
-}
+export type TranscriptEntry = {
+  transcript: string;
+  timestamp: Date;
+};

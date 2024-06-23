@@ -1,12 +1,15 @@
 import {
+  Ambulance,
   List,
   MoonStars,
   Pause,
+  PencilLine,
   PhoneDisconnect,
   PhoneOutgoing,
   PhonePause,
   PhoneSlash,
   Sun,
+  UserCircle,
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
@@ -20,7 +23,7 @@ import {
   getUsers,
   restartCall,
 } from "@/api/api.ts";
-import { TranscriptionEntity } from "@/utility/types.ts";
+import { TranscriptEntry, TranscriptionEntity } from "@/utility/types.ts";
 import { Separator } from "@/components/ui/separator.tsx";
 
 interface HackathonWinter24Props {}
@@ -32,7 +35,7 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
   const [summaryString, setSummaryString] = useState("");
   const [callTerminated, setCallTerminated] = useState(false);
   const [callOnHold, setCallOnHold] = useState(false);
-  const [callTime, setCallTime] = useState(new Date());
+  const [callTime, _setCallTime] = useState(new Date());
 
   useGetGlobalData();
 
@@ -56,8 +59,8 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
   };
 
   useEffect(() => {
-    const intervalId1 = setInterval(updateTranscript, 1750);
-    // const intervalId2 = setInterval(updateSummary, 7000);
+    const intervalId1 = setInterval(updateTranscript, 1500);
+    // const intervalId2 = setInterval(() => updateSummary(true), 7000);
     return () => {
       clearInterval(intervalId1);
       // clearInterval(intervalId2);
@@ -71,7 +74,6 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
     if (!!scrollableTranscriptBox) {
       scrollableTranscriptBox.scrollTop = scrollableTranscriptBox.scrollHeight;
     }
-
     updateSummary();
   }, [updatedTranscript]);
 
@@ -90,15 +92,13 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
     const updateCallDuration = () => {
       if (!callTerminated) {
         setCallDuration((prevTime) => prevTime + 1);
-      } else {
-        console.log({ callTerminated, callOnHold });
       }
     };
     restartCall();
     const interval = setInterval(updateCallDuration, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [callTerminated]);
 
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -117,12 +117,12 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
       className={cn(
         "w-screen h-screen",
         "bg-primary-foreground transition-all duration-500 ease-out",
-        isDark ? "dark bg-slate-900 saturate-[80%]" : "bg-white",
+        isDark ? "dark bg-slate-900" : "bg-white",
       )}
     >
       <div
         className={
-          "flex flex-row items-center gap-4 px-6 h-[65px] w-screen transition-all duration-500 ease-out dark:bg-[#183B8F] bg-[#bdccff] text-primary"
+          "flex flex-row items-center gap-4 px-6 h-[65px] w-screen transition-all duration-500 ease-out dark:bg-[#183B8F] bg-sky-200 saturate-[90%] text-primary"
         }
       >
         <List />
@@ -163,7 +163,7 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
         >
           <div
             className={
-              "flex flex-col h-[10vh] w-full flex-grow bg-slate-300 rounded-xl mb-[1vw] px-5 py-4"
+              "flex flex-col h-[4vh] w-full flex-grow bg-slate-300 rounded-xl mb-[1vw] px-5 py-4 shadow-md"
             }
           >
             <p
@@ -188,7 +188,7 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
             {callTerminated && (
               <p
                 className={
-                  "flex flex-row items-center gap-1.5 animate-blink font-extrabold mt-2 text-lg text-red-700"
+                  "flex flex-row items-center gap-1.5 animate-blink font-extrabold mt-2 text-lg text-red-700 "
                 }
               >
                 <span>CALL TERMINATED</span>
@@ -221,8 +221,8 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
                 variant={"destructive"}
                 disabled={callTerminated}
                 onClick={() => {
-                  terminateCall();
                   setCallTerminated(true);
+                  terminateCall();
                 }}
               >
                 <PhoneDisconnect size={"1.5rem"} />
@@ -231,12 +231,15 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
           </div>
           <div
             className={cn(
-              "flex flex-col flex-grow h-[45vh] w-full px-5 py-4 rounded-xl transition-all duration-500 ease-out",
-              "dark:bg-slate-700 dark:text-white bg-slate-300",
+              "flex flex-col flex-grow h-[55vh] w-full px-5 py-4 rounded-xl transition-all duration-500 ease-out shadow-md",
+              "dark:bg-slate-700 dark:text-white bg-slate-200",
             )}
           >
-            <h1 className={"text-lg mb-2 font-semibold"}>Caller Data</h1>
-            <Separator className={"bg-primary mb-4"} />
+            <div className={"flex flex-row items-center gap-2 mb-2"}>
+              <p className={"text-lg font-semibold"}>Caller Data</p>
+              <UserCircle size={"1.2rem"} />
+            </div>
+            <Separator className={"bg-primary mb-6"} />
 
             <div className={"flex flex-col gap-4"}>
               <p>
@@ -262,7 +265,7 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
                 <span>{"N/A"}</span>
               </p>
               <div>
-                <p className={"font-bold"}>{"AML Location: "}</p>
+                <p className={"font-bold"}>{"AML Caller Location: "}</p>
                 <p>{"McDonald's Hay St & William St, Perth WA 6000"}</p>
               </div>
             </div>
@@ -278,35 +281,41 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
         <div className={"w-[65vw] flex flex-col flex-grow h-full p-[1vw] pl-0"}>
           <div
             className={cn(
-              "h-[55vw] px-5 py-4 rounded-xl transition-all duration-500 ease-out overflow-y-hidden",
-              "dark:bg-slate-700 dark:text-white bg-slate-300",
+              "h-[55vw] px-5 py-4 rounded-xl transition-all duration-500 ease-out overflow-y-hidden shadow-md",
+              "dark:bg-slate-700 dark:text-white bg-cyan-300 saturate-[10%] dark:saturate-100",
             )}
           >
-            <h1 className={"text-lg mb-2 font-semibold"}>Active Transcript</h1>
+            <div className={"flex flex-row items-center gap-2 mb-2"}>
+              <p className={"text-lg font-semibold"}>Active Transcript</p>
+              <PencilLine size={"1.2rem"} />
+            </div>
             <Separator className={"bg-primary mb-4"} />
             <div
               className={"h-full p-2 overflow-y-scroll scroll-smooth"}
               id={"scrollableTranscriptBox"}
             >
               <p className={""}>{updatedTranscript}</p>
+              {/*{transcriptArray.map((transcriptItem, key) => (*/}
+              {/*  <div key={key} className={"mb-4"}>*/}
+              {/*    <p className={"font-light"}>*/}
+              {/*      {transcriptItem.timestamp.toLocaleTimeString()}*/}
+              {/*    </p>*/}
+              {/*    <p className={"font-medium"}>{transcriptItem.transcript}</p>*/}
+              {/*  </div>*/}
+              {/*))}*/}
             </div>
           </div>
           <div
             className={cn(
-              "flex flex-col h-[42vw] flex-grow px-5 py-3 rounded-xl mt-[1vw]",
+              "flex flex-col h-[42vw] flex-grow px-5 py-3 rounded-xl mt-[1vw] shadow-md",
               "dark:bg-slate-700 dark:text-white bg-slate-300 overflow-y-hidden",
             )}
           >
-            <h1 className={"text-lg font-semibold mb-2"}>
-              Crucial Information
-            </h1>
+            <div className={"flex flex-row items-center gap-2 mb-2"}>
+              <p className={"text-lg font-semibold"}>Crucial Information</p>
+              <Ambulance size={"1.2rem"} />
+            </div>
             <Separator className={"bg-primary mb-4"} />
-            {/*<Button*/}
-            {/*  className={"mb-4"}*/}
-            {/*  onClick={() => getSummary().then((result) => console.log(result))}*/}
-            {/*>*/}
-            {/*  Summarise*/}
-            {/*</Button>*/}
             <div
               className={"h-full overflow-y-scroll scroll-smooth"}
               id={"scrollableSummaryBox"}
