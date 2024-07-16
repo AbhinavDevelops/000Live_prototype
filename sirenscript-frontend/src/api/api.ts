@@ -80,7 +80,7 @@ export async function getSummary(fullTranscript: string): Promise<string> {
         {
           role: "system",
           content:
-            "Act like you are a emergency services first responder, taking a 000 call. Respond with key points of crucial information about the caller, identity, situation and the department required (eg. fire/police/ambulance) as a continuous string of text, with each key piece of info separated by a period (eg. 'Caller is bleeding out.Caller is trapped in lift with daughter.Felon holding both people hostage.'). Each key point should have only one piece of information. Return to me nothing else.",
+            "You are receiving a conversation between a caller and an emergency services first-responder. Respond with key points of crucial information about the caller, identity, situation and the department required (i.e. 'Department: [Fire/Police/Ambulance]') as a continuous string of text, with each key piece of info separated by a period (eg. 'Caller is bleeding out.Caller is trapped in lift with daughter.Felon holding both people hostage.'). Each key point should have only one piece of information. The department point should come first in your response. Return to me nothing else.",
         },
         {
           role: "user",

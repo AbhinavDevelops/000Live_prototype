@@ -4,14 +4,16 @@ import {
   MoonStars,
   Pause,
   PencilLine,
+  Phone,
   PhoneDisconnect,
   PhoneOutgoing,
   PhonePause,
   PhoneSlash,
+  PhoneTransfer,
   Sun,
   UserCircle,
 } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { cn } from "@/utility/utils.ts";
 import useGetGlobalData from "@/hooks/queries/useGetGlobalData.tsx";
@@ -25,11 +27,12 @@ import {
 } from "@/api/api.ts";
 import { TranscriptEntry, TranscriptionEntity } from "@/utility/types.ts";
 import { Separator } from "@/components/ui/separator.tsx";
+import { BounceLoader, ClipLoader } from "react-spinners";
 
 interface HackathonWinter24Props {}
 
 export default function HackathonWinter24({}: HackathonWinter24Props) {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
   const [updatedTranscript, setUpdatedTranscript] = useState("");
   const [summaryString, setSummaryString] = useState("");
@@ -112,6 +115,10 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
     return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
   };
 
+  const override: CSSProperties = {
+    marginBottom: "0.5rem",
+  };
+
   return (
     <div
       className={cn(
@@ -125,7 +132,7 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
           "flex flex-row items-center gap-4 px-6 h-[65px] w-screen transition-all duration-500 ease-out dark:bg-[#183B8F] bg-sky-200 saturate-[90%] text-primary"
         }
       >
-        <List />
+        <List size={"1.6rem"} />
         <img
           className={"w-32"}
           src={`/assets/sirenscript-logo-${isDark ? "white" : "black"}.png`}
@@ -169,7 +176,7 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
             <p
               className={cn(
                 "text-lg font-medium",
-                callOnHold && "animate-blink",
+                // callOnHold && "animate-blink",
                 callTerminated && "text-red-700",
               )}
             >
@@ -185,6 +192,16 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
                 <Pause />
               </p>
             )}
+            {!callOnHold && !callTerminated && (
+              <p
+                className={
+                  "flex flex-row items-center gap-1.5 font-extrabold mt-2 text-lg"
+                }
+              >
+                <span>CALL ACTIVE</span>
+                <Phone />
+              </p>
+            )}
             {callTerminated && (
               <p
                 className={
@@ -197,7 +214,15 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
             )}
             <div className={"flex flex-row gap-2 w-full mt-auto"}>
               <Button
-                className={"flex-grow"}
+                className={cn("flex-grow")}
+                variant={callOnHold ? "secondary" : "default"}
+                disabled={callTerminated}
+                onClick={() => {}}
+              >
+                <PhoneTransfer size={"1.5rem"} />
+              </Button>
+              <Button
+                className={cn("flex-grow")}
                 variant={callOnHold ? "default" : "secondary"}
                 disabled={callTerminated}
                 onClick={() => {
@@ -211,7 +236,10 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
                 }}
               >
                 {!callOnHold ? (
-                  <PhonePause size={"1.5rem"} />
+                  <PhonePause
+                    className={cn(callOnHold && "animate-pulse")}
+                    size={"1.5rem"}
+                  />
                 ) : (
                   <PhoneOutgoing size={"1.5rem"} />
                 )}
@@ -308,19 +336,25 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
           <div
             className={cn(
               "flex flex-col h-[42vw] flex-grow px-5 py-3 rounded-xl mt-[1vw] shadow-md",
-              "dark:bg-slate-700 dark:text-white bg-slate-300 overflow-y-hidden",
+              "bg-slate-300 overflow-y-hidden",
             )}
           >
             <div className={"flex flex-row items-center gap-2 mb-2"}>
               <p className={"text-lg font-semibold"}>Crucial Information</p>
               <Ambulance size={"1.2rem"} />
             </div>
-            <Separator className={"bg-primary mb-4"} />
+            <Separator className={"bg-background mb-4"} />
             <div
-              className={"h-full overflow-y-scroll scroll-smooth"}
+              className={
+                "flex flex-row items-start justify-start h-full overflow-y-scroll scroll-smooth"
+              }
               id={"scrollableSummaryBox"}
             >
-              <ul className={"flex flex-col gap-3 list-disc ml-4"}>
+              <ul
+                className={
+                  "flex flex-col gap-3 list-disc ml-6 mr-4 font-medium text-base"
+                }
+              >
                 {summaryString !== "" &&
                   (!summaryString.includes("ranscript") ||
                     !summaryString.includes("ready")) &&
@@ -328,9 +362,34 @@ export default function HackathonWinter24({}: HackathonWinter24Props) {
                     .split(".")
                     .slice(0, summaryString.split(".").length - 1)
                     .map((dotPoint, index) => {
-                      return <li key={index}>{dotPoint}</li>;
+                      return (
+                        <li
+                          key={index}
+                          className={cn(
+                            dotPoint.includes("Department") &&
+                              "font-extrabold text-red-700 animate-pulse duration-[1900ms]",
+                            summaryString.includes(
+                              "Awaiting key information",
+                            ) && "animate-pulse",
+                          )}
+                        >
+                          {summaryString.includes("Awaiting key information")
+                            ? dotPoint + "..."
+                            : dotPoint + "."}
+                        </li>
+                      );
                     })}
               </ul>
+              {summaryString.includes("Awaiting key information") && (
+                <BounceLoader
+                  color={"#183B8F"}
+                  loading={true}
+                  cssOverride={override}
+                  size={"1.65rem"}
+                  aria-label="Loading Spinner"
+                  data-testid="loader"
+                />
+              )}
             </div>
           </div>
         </div>
